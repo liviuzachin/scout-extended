@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Algolia\ScoutExtended\Searchable;
 
 use Algolia\ScoutExtended\Exceptions\ShouldReimportSearchableException;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use function count;
 use function get_class;
 
@@ -40,8 +41,11 @@ class ObjectIdEncrypter
     public static function encrypt($searchable, ?int $part = null): string
     {
         $scoutKey = method_exists($searchable, 'getScoutKey') ? $searchable->getScoutKey() : $searchable->getKey();
+        $scoutKeyPrefix = method_exists($searchable, 'getScoutKeyPrefix')
+            ? $searchable->getScoutKeyPrefix()
+            : get_class($searchable);
 
-        $meta = [get_class($searchable->getModel()), $scoutKey];
+        $meta = [$scoutKeyPrefix, $scoutKey];
 
         if ($part !== null) {
             $meta[] = $part;
