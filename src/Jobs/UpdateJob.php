@@ -13,23 +13,23 @@ declare(strict_types=1);
 
 namespace Algolia\ScoutExtended\Jobs;
 
-use Algolia\AlgoliaSearch\SearchClient;
+use Algolia\AlgoliaSearch\Api\SearchClient;
 use Algolia\ScoutExtended\Contracts\SplitterContract;
 use Algolia\ScoutExtended\Searchable\ModelsResolver;
 use Algolia\ScoutExtended\Searchable\ObjectIdEncrypter;
 use Algolia\ScoutExtended\Transformers\ConvertDatesToTimestamps;
 use Algolia\ScoutExtended\Transformers\ConvertNumericStringsToNumbers;
-use Laravel\Scout\Searchable;
-use function get_class;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Laravel\Scout\Searchable;
+use ReflectionClass;
+use function get_class;
 use function in_array;
 use function is_array;
 use function is_string;
-use ReflectionClass;
 
 /**
  * @internal
@@ -85,7 +85,7 @@ class UpdateJob
     }
 
     /**
-     * @param \Algolia\AlgoliaSearch\SearchClient $client
+     * @param \Algolia\AlgoliaSearch\Api\SearchClient $client
      *
      * @return void
      */
@@ -99,7 +99,7 @@ class UpdateJob
             $this->searchables->each->pushSoftDeleteMetadata();
         }
 
-        $index = $client->initIndex($this->searchables->first()->searchableAs());
+        $indexName = $this->searchables->first()->searchableAs();
 
         $objectsToSave = [];
         $searchablesToDelete = [];
@@ -137,9 +137,9 @@ class UpdateJob
 
         dispatch_sync(new DeleteJob(collect($searchablesToDelete)));
 
-        $result = $index->saveObjects($objectsToSave);
+        $response = $client->saveObjects($indexName, $objectsToSave);
         if (config('scout.synchronous', false)) {
-            $result->wait();
+            $client->waitForTask($indexName, $response['taskID']);
         }
     }
 

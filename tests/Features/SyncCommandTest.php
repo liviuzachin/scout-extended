@@ -16,8 +16,11 @@ class SyncCommandTest extends TestCase
     {
         $this->expectException(FakeException::class);
 
+        $indexName = (new User)->searchableAs();
+        $this->mockIndex(User::class);
+
         $synchronizerMock = mock(Synchronizer::class);
-        $synchronizerMock->shouldReceive('analyse')->once()->with($this->mockIndex(User::class))->andThrow(FakeException::class);
+        $synchronizerMock->shouldReceive('analyse')->once()->with($indexName)->andThrow(FakeException::class);
         $this->swap(Synchronizer::class, $synchronizerMock);
 
         Artisan::call('scout:sync', ['searchable' => User::class]);
@@ -36,9 +39,9 @@ class SyncCommandTest extends TestCase
 
     public function testWhenLocalSettingsNotFoundWithoutOptimize(): void
     {
-        $usersIndex = $this->mockIndex(User::class, array_merge($this->defaults(), $this->local()));
+        $this->mockIndex(User::class, array_merge($this->defaults(), $this->local()));
 
-        $this->assertSettingsSet($usersIndex, [], ['settingsHash' => $this->localMd5()]);
+        $this->assertSettingsSet('users', [], ['settingsHash' => $this->localMd5()]);
 
         $this->artisan('scout:sync', ['searchable' => User::class])->expectsQuestion('Wish to optimize the search experience based on information from the searchable class?', false);
 
@@ -49,9 +52,9 @@ class SyncCommandTest extends TestCase
     {
         file_put_contents(config_path('scout-users.php'), '<?php return '.var_export($this->local(), true).';');
 
-        $usersIndex = $this->mockIndex(User::class, $this->defaults());
+        $this->mockIndex(User::class, $this->defaults());
 
-        $this->assertSettingsSet($usersIndex, $this->local(), ['settingsHash' => $this->localMd5()]);
+        $this->assertSettingsSet('users', $this->local(), ['settingsHash' => $this->localMd5()]);
 
         Artisan::call('scout:sync', ['searchable' => User::class]);
     }
@@ -70,13 +73,13 @@ class SyncCommandTest extends TestCase
         $local = array_merge($this->local(), ['newSetting' => true]);
         file_put_contents(config_path('scout-users.php'), '<?php return '.var_export($local, true).';');
 
-        $usersIndex = $this->mockIndex(User::class, array_merge($this->defaults(), $this->local()), [
+        $this->mockIndex(User::class, array_merge($this->defaults(), $this->local()), [
             'settingsHash' => $this->localMd5(),
         ]);
 
         ksort($local);
 
-        $this->assertSettingsSet($usersIndex, $local, ['settingsHash' => md5(serialize($local))]);
+        $this->assertSettingsSet('users', $local, ['settingsHash' => md5(serialize($local))]);
 
         Artisan::call('scout:sync', ['searchable' => User::class, '--no-interaction' => true]);
     }
@@ -86,13 +89,13 @@ class SyncCommandTest extends TestCase
         file_put_contents(config_path('scout-users.php'), '<?php return '.var_export($this->local(), true).';');
 
         $remoteSettings = array_merge($this->local(), ['newSetting' => true]);
-        $usersIndex = $this->mockIndex(User::class, array_merge($this->defaults(), $remoteSettings), [
+        $this->mockIndex(User::class, array_merge($this->defaults(), $remoteSettings), [
             'settingsHash' => $this->localMd5(),
         ]);
 
         ksort($remoteSettings);
 
-        $this->assertSettingsSet($usersIndex, [], ['settingsHash' => md5(serialize($remoteSettings))]);
+        $this->assertSettingsSet('users', [], ['settingsHash' => md5(serialize($remoteSettings))]);
 
         Artisan::call('scout:sync', ['searchable' => User::class, '--no-interaction' => true]);
         $this->assertLocalHas($remoteSettings);
@@ -120,13 +123,13 @@ class SyncCommandTest extends TestCase
         file_put_contents(config_path('scout-users.php'), '<?php return '.var_export($localSettings, true).';');
 
         $remoteWithoutDefaults = array_merge($this->local(), ['newSetting' => true]);
-        $usersIndex = $this->mockIndex(User::class, array_merge($this->defaults(), $remoteWithoutDefaults), [
+        $this->mockIndex(User::class, array_merge($this->defaults(), $remoteWithoutDefaults), [
             'settingsHash' => $this->localMd5(),
         ]);
 
         ksort($localSettings);
 
-        $this->assertSettingsSet($usersIndex, $localSettings, ['settingsHash' => md5(serialize($localSettings))]);
+        $this->assertSettingsSet('users', $localSettings, ['settingsHash' => md5(serialize($localSettings))]);
 
         Artisan::call('scout:sync', ['searchable' => User::class, '--no-interaction' => true, '--keep' => 'local']);
 
@@ -139,13 +142,13 @@ class SyncCommandTest extends TestCase
         file_put_contents(config_path('scout-users.php'), '<?php return '.var_export($localSettings, true).';');
 
         $remoteWithoutDefaults = array_merge($this->local(), ['newSetting' => true]);
-        $usersIndex = $this->mockIndex(User::class, array_merge($this->defaults(), $remoteWithoutDefaults), [
+        $this->mockIndex(User::class, array_merge($this->defaults(), $remoteWithoutDefaults), [
             'settingsHash' => $this->localMd5(),
         ]);
 
         ksort($remoteWithoutDefaults);
 
-        $this->assertSettingsSet($usersIndex, [], ['settingsHash' => md5(serialize($remoteWithoutDefaults))]);
+        $this->assertSettingsSet('users', [], ['settingsHash' => md5(serialize($remoteWithoutDefaults))]);
 
         Artisan::call('scout:sync', ['searchable' => User::class, '--no-interaction' => true, '--keep' => 'remote']);
 

@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Features;
 
-use Algolia\AlgoliaSearch\AnalyticsClient;
-use Algolia\AlgoliaSearch\SearchClient;
-use Algolia\AlgoliaSearch\SearchIndex;
+use Algolia\AlgoliaSearch\Api\AnalyticsClient;
+use Algolia\AlgoliaSearch\Api\SearchClient;
 use Algolia\ScoutExtended\Algolia;
 use App\User;
 use Tests\TestCase;
@@ -24,11 +23,13 @@ class AlgoliaTest extends TestCase
 
     public function testIndexGetter(): void
     {
-        $this->assertInstanceOf(SearchIndex::class, $index = $this->algolia->index(User::class));
+        $indexName = $this->algolia->index(User::class);
+        $this->assertIsString($indexName);
 
-        $index = $this->algolia->index($model = new User);
-        $this->assertInstanceOf(SearchIndex::class, $index);
-        $this->assertSame($model->searchableAs(), $index->getIndexName());
+        $model = new User;
+        $indexName = $this->algolia->index($model);
+        $this->assertIsString($indexName);
+        $this->assertSame($model->searchableAs(), $indexName);
     }
 
     public function testClientGetter(): void

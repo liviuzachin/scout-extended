@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Algolia\ScoutExtended\Settings;
 
-use Algolia\AlgoliaSearch\SearchIndex;
 use Algolia\ScoutExtended\Exceptions\ModelNotFoundException;
 use Algolia\ScoutExtended\Repositories\RemoteSettingsRepository;
 use Algolia\ScoutExtended\Searchable\Aggregator;
@@ -120,12 +119,12 @@ class LocalFactory
     /**
      * Creates settings for the given model.
      *
-     * @param \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param string $indexName
      * @param string $model
      *
      * @return \Algolia\ScoutExtended\Settings\Settings
      */
-    public function create(SearchIndex $index, string $model): Settings
+    public function create(string $indexName, string $model): Settings
     {
         $attributes = $this->getAttributes($model);
         $searchableAttributes = [];
@@ -167,7 +166,7 @@ class LocalFactory
             'queryLanguages' => array_unique([config('app.locale'), config('app.fallback_locale')]),
         ];
 
-        $settings = array_merge($this->remoteRepository->find($index)->compiled(), $detectedSettings);
+        $settings = array_merge($this->remoteRepository->find($indexName)->compiled(), $detectedSettings);
 
         return new Settings($settings, $this->remoteRepository->defaults());
     }

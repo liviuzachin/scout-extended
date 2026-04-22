@@ -22,10 +22,12 @@ class SearchableTest extends TestCase
 
         $metadataKeys = ModelsResolver::$metadata;
 
-        $usersIndex = $this->mockIndex(User::class);
-        $usersIndex->expects('saveObjects')->once()->with(Mockery::on(function ($argument) use ($metadataKeys) {
-            return count(Arr::only($argument[0], $metadataKeys)) === 0;
-        }));
+        $this->mockIndex(User::class)
+            ->expects('saveObjects')
+            ->with('users', Mockery::on(function ($argument) use ($metadataKeys) {
+                return count(Arr::only($argument[0], $metadataKeys)) === 0;
+            }))
+            ->once();
 
         $user->searchable();
     }
@@ -39,8 +41,10 @@ class SearchableTest extends TestCase
 
         $item->pushSoftDeleteMetadata();
 
-        $itemsIndex = $this->mockIndex(EmptyItem::class);
-        $itemsIndex->expects('saveObjects')->once()->with([]);
+        $this->mockIndex(EmptyItem::class)
+            ->expects('saveObjects')
+            ->with((new EmptyItem)->searchableAs(), [])
+            ->once();
 
         $item->searchable();
     }

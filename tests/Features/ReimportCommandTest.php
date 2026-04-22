@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Features;
 
+use Algolia\AlgoliaSearch\Model\Search\OperationIndexParams;
 use App\User;
 use Illuminate\Support\Facades\Artisan;
 use Mockery;
@@ -15,28 +16,30 @@ class ReimportCommandTest extends TestCase
     {
         factory(User::class, 5)->create();
 
-        $client = $this->mockClient();
+        $indexName = (new User())->searchableAs();
+        $temporaryName = 'temp_'.$indexName;
 
+        // Set up engine + client mock with getSettings for the main index
         $this->mockIndex(User::class);
 
-        $userTemporaryIndex = $this->mockIndex('temp_'.(new User())->searchableAs());
+        $client = $this->mockClient();
 
-        $client->shouldReceive('copyIndex')->with((new User())->searchableAs(), $userTemporaryIndex->getIndexName(), [
-            'scope' => [
-                'settings',
-                'synonyms',
-                'rules',
-            ],
-        ])->andReturn($this->mockResponse());
+        // getSettings for temp index (called after import to verify it exists)
+        $client->shouldReceive('getSettings')->with($temporaryName)->andReturn([]);
 
-        $userTemporaryIndex->shouldReceive('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        // operationIndex handles both copy and move
+        $client->shouldReceive('operationIndex')
+            ->with($indexName, Mockery::type(OperationIndexParams::class))
+            ->andReturn(['taskID' => 1]);
+
+        $client->shouldReceive('operationIndex')
+            ->with($temporaryName, Mockery::type(OperationIndexParams::class))
+            ->andReturn(['taskID' => 1]);
+
+        // saveObjects called by makeAllSearchable() via UpdateJob for the temp index
+        $client->shouldReceive('saveObjects')->with($temporaryName, Mockery::on(function ($argument) {
             return count($argument) === 5 && $argument[0]['objectID'] === 'App\User::1';
-        }))->andReturn($this->mockResponse());
-
-        $userTemporaryIndex->shouldReceive('search')->andReturn(['nbHits' => 5]);
-
-        $client->shouldReceive('moveIndex')->with($userTemporaryIndex->getIndexName(), 'users')
-            ->andReturn($this->mockResponse());
+        }))->andReturn(['taskID' => 1]);
 
         Artisan::call('scout:reimport', ['searchable' => User::class]);
     }

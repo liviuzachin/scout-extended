@@ -17,13 +17,13 @@ class FlushCommandTest extends TestCase
 {
     public function testClearsIndex(): void
     {
-        $this->mockIndex(News::class)->expects('clearObjects')->once();
-        $this->mockIndex(User::class)->expects('clearObjects')->once();
-        $this->mockIndex(Thread::class)->expects('clearObjects')->once();
-        $this->mockIndex(Wall::class)->expects('clearObjects')->once();
-        $this->mockIndex(All::class)->expects('clearObjects')->once();
-        $this->mockIndex(EmptyItem::class)->expects('clearObjects')->once();
-        $this->mockIndex(Term::class)->expects('clearObjects')->once();
+        $client = $this->mockClient();
+
+        foreach ([News::class, User::class, Thread::class, Wall::class, All::class, EmptyItem::class, Term::class] as $model) {
+            $indexName = (new $model)->searchableAs();
+            $this->mockIndex($model);
+            $client->expects('clearObjects')->with($indexName)->once();
+        }
 
         /*
          * Detects searchable models.

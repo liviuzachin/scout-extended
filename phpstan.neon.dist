@@ -5,9 +5,10 @@ parameters:
     paths:
         - src
     treatPhpDocTypesAsCertain: false
-    excludePaths:
-            - src/Engines/AlgoliaEngine.php
     ignoreErrors:
         - '#Illuminate\\Database\\Eloquent\\Model::(searchableAs|searchableUsing)\(\)#'
         - '#Unsafe usage of new static#'
-        - '#Return type \(Algolia\\ScoutExtended\\Engines\\AlgoliaEngine\) of method Algolia\\ScoutExtended\\Managers\\EngineManager::createAlgoliaDriver\(\) should be compatible with return type \(Laravel\\Scout\\Engines\\AlgoliaEngine\) of method Laravel\\Scout\\EngineManager::createAlgoliaDriver\(\)#'
+        - message: '#Return type \(array\) of method Algolia\\ScoutExtended\\Engines\\AlgoliaEngine::filters\(\) should be compatible with return type \(string\)#'
+          reportUnmatched: false
+        - message: '#Return type \(Algolia\\ScoutExtended\\Engines\\AlgoliaEngine\) of method Algolia\\ScoutExtended\\Managers\\EngineManager::createAlgoliaDriver\(\) should be compatible#'
+          reportUnmatched: false

@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Algolia\ScoutExtended\Settings;
 
-use Algolia\AlgoliaSearch\SearchIndex;
 use Algolia\ScoutExtended\Contracts\LocalSettingsRepositoryContract;
 use Algolia\ScoutExtended\Repositories\UserDataRepository;
 use Illuminate\Support\Str;
@@ -45,9 +44,9 @@ class Status
     private $remoteSettings;
 
     /**
-     * @var \Algolia\AlgoliaSearch\SearchIndex
+     * @var string
      */
-    private $index;
+    private $indexName;
 
     public const LOCAL_NOT_FOUND = 'localNotFound';
 
@@ -65,9 +64,10 @@ class Status
      * Status constructor.
      *
      * @param \Algolia\ScoutExtended\Contracts\LocalSettingsRepositoryContract $localRepository
+     * @param \Algolia\ScoutExtended\Repositories\UserDataRepository $userDataRepository
      * @param \Algolia\ScoutExtended\Settings\Encrypter $encrypter
      * @param \Algolia\ScoutExtended\Settings\Settings $remoteSettings
-     * @param \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param string $indexName
      *
      * @return void
      */
@@ -76,13 +76,13 @@ class Status
         UserDataRepository $userDataRepository,
         Encrypter $encrypter,
         Settings $remoteSettings,
-        SearchIndex $index
+        string $indexName
     ) {
         $this->encrypter = $encrypter;
         $this->localRepository = $localRepository;
         $this->userDataRepository = $userDataRepository;
         $this->remoteSettings = $remoteSettings;
-        $this->index = $index;
+        $this->indexName = $indexName;
     }
 
     /**
@@ -90,7 +90,7 @@ class Status
      */
     public function localNotFound(): bool
     {
-        return ! $this->localRepository->exists($this->index);
+        return ! $this->localRepository->exists($this->indexName);
     }
 
     /**
@@ -98,7 +98,7 @@ class Status
      */
     public function remoteNotFound(): bool
     {
-        return empty($this->userDataRepository->getSettingsHash($this->index));
+        return empty($this->userDataRepository->getSettingsHash($this->indexName));
     }
 
     /**
@@ -106,9 +106,9 @@ class Status
      */
     public function bothAreEqual(): bool
     {
-        return $this->encrypter->encrypt($this->localRepository->find($this->index)) ===
-            $this->userDataRepository->getSettingsHash($this->index) &&
-            $this->encrypter->encrypt($this->remoteSettings) === $this->userDataRepository->getSettingsHash($this->index);
+        return $this->encrypter->encrypt($this->localRepository->find($this->indexName)) ===
+            $this->userDataRepository->getSettingsHash($this->indexName) &&
+            $this->encrypter->encrypt($this->remoteSettings) === $this->userDataRepository->getSettingsHash($this->indexName);
     }
 
     /**
@@ -116,9 +116,9 @@ class Status
      */
     public function localGotUpdated(): bool
     {
-        return $this->encrypter->encrypt($this->localRepository->find($this->index)) !==
-            $this->userDataRepository->getSettingsHash($this->index) &&
-            $this->encrypter->encrypt($this->remoteSettings) === $this->userDataRepository->getSettingsHash($this->index);
+        return $this->encrypter->encrypt($this->localRepository->find($this->indexName)) !==
+            $this->userDataRepository->getSettingsHash($this->indexName) &&
+            $this->encrypter->encrypt($this->remoteSettings) === $this->userDataRepository->getSettingsHash($this->indexName);
     }
 
     /**
@@ -126,9 +126,9 @@ class Status
      */
     public function remoteGotUpdated(): bool
     {
-        return $this->encrypter->encrypt($this->localRepository->find($this->index)) ===
-            $this->userDataRepository->getSettingsHash($this->index) &&
-            $this->encrypter->encrypt($this->remoteSettings) !== $this->userDataRepository->getSettingsHash($this->index);
+        return $this->encrypter->encrypt($this->localRepository->find($this->indexName)) ===
+            $this->userDataRepository->getSettingsHash($this->indexName) &&
+            $this->encrypter->encrypt($this->remoteSettings) !== $this->userDataRepository->getSettingsHash($this->indexName);
     }
 
     /**
@@ -136,9 +136,9 @@ class Status
      */
     public function bothGotUpdated(): bool
     {
-        return $this->encrypter->encrypt($this->localRepository->find($this->index)) !==
-            $this->userDataRepository->getSettingsHash($this->index) &&
-            $this->encrypter->encrypt($this->remoteSettings) !== $this->userDataRepository->getSettingsHash($this->index);
+        return $this->encrypter->encrypt($this->localRepository->find($this->indexName)) !==
+            $this->userDataRepository->getSettingsHash($this->indexName) &&
+            $this->encrypter->encrypt($this->remoteSettings) !== $this->userDataRepository->getSettingsHash($this->indexName);
     }
 
     /**

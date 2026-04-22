@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace Algolia\ScoutExtended\Console\Commands;
 
+use Algolia\AlgoliaSearch\Api\SearchClient;
 use Algolia\AlgoliaSearch\Exceptions\NotFoundException;
-use Algolia\AlgoliaSearch\SearchClient;
-use Algolia\AlgoliaSearch\SearchIndex;
+use Algolia\AlgoliaSearch\Model\Search\OperationIndexParams;
+use Algolia\AlgoliaSearch\Model\Search\OperationType;
+use Algolia\AlgoliaSearch\Model\Search\ScopeType;
 use Algolia\ScoutExtended\Helpers\SearchableFinder;
 use function count;
 use Illuminate\Console\Command;
@@ -55,21 +57,22 @@ class ReImportCommand extends Command
         $this->output->progressStart(count($searchables) * 3);
 
         foreach ($searchables as $searchable) {
-            $index = $client->initIndex((new $searchable)->searchableAs());
-            $temporaryName = $this->getTemporaryIndexName($index);
+            $indexName = (new $searchable)->searchableAs();
+            $temporaryName = $this->getTemporaryIndexName($indexName);
 
             tap($this->output)->progressAdvance()->text("Creating temporary index <info>{$temporaryName}</info>");
 
             try {
-                $index->getSettings();
+                $client->getSettings($indexName);
 
-                $client->copyIndex($index->getIndexName(), $temporaryName, [
-                    'scope' => [
-                        'settings',
-                        'synonyms',
-                        'rules',
-                    ],
-                ])->wait();
+                $response = $client->operationIndex(
+                    $indexName,
+                    (new OperationIndexParams())
+                        ->setOperation(OperationType::COPY) // @phpstan-ignore argument.type (generated client uses string constants typed as class)
+                        ->setDestination($temporaryName)
+                        ->setScope([ScopeType::SETTINGS, ScopeType::SYNONYMS, ScopeType::RULES]) // @phpstan-ignore argument.type (generated client uses string constants typed as class)
+                );
+                $client->waitForTask($temporaryName, $response['taskID']);
             } catch (NotFoundException $e) {
                 // ..
             }
@@ -90,21 +93,25 @@ class ReImportCommand extends Command
             $config->set('scout.queue', $useQueues);
 
             tap($this->output)->progressAdvance()
-                ->text("Replacing index <info>{$index->getIndexName()}</info> by index <info>{$temporaryName}</info>");
-
-            $temporaryIndex = $client->initIndex($temporaryName);
+                ->text("Replacing index <info>{$indexName}</info> by index <info>{$temporaryName}</info>");
 
             try {
-                $temporaryIndex->getSettings();
+                $client->getSettings($temporaryName);
 
-                $response = $client->moveIndex($temporaryName, $index->getIndexName());
+                $response = $client->operationIndex(
+                    $temporaryName,
+                    (new OperationIndexParams())
+                        ->setOperation(OperationType::MOVE) // @phpstan-ignore argument.type (generated client uses string constants typed as class)
+                        ->setDestination($indexName)
+                );
 
                 if ($config->get('scout.synchronous', false)) {
-                    $response->wait();
+                    $client->waitForTask($indexName, $response['taskID']);
                 }
             } catch (NotFoundException $e) {
-                if (!$index->exists()) {
-                    $index->setSettings(['attributesForFaceting' => null])->wait();
+                if (!$client->indexExists($indexName)) {
+                    $response = $client->setSettings($indexName, ['attributesForFaceting' => null]);
+                    $client->waitForTask($indexName, $response['taskID']);
                 }
             }
         }
@@ -115,12 +122,12 @@ class ReImportCommand extends Command
     /**
      * Get a temporary index name.
      *
-     * @param \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param string $indexName
      *
      * @return string
      */
-    private function getTemporaryIndexName(SearchIndex $index): string
+    private function getTemporaryIndexName(string $indexName): string
     {
-        return self::$prefix.'_'.$index->getIndexName();
+        return self::$prefix.'_'.$indexName;
     }
 }

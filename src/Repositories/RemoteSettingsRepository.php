@@ -13,9 +13,8 @@ declare(strict_types=1);
 
 namespace Algolia\ScoutExtended\Repositories;
 
+use Algolia\AlgoliaSearch\Api\SearchClient;
 use Algolia\AlgoliaSearch\Exceptions\NotFoundException;
-use Algolia\AlgoliaSearch\SearchClient;
-use Algolia\AlgoliaSearch\SearchIndex;
 use Algolia\ScoutExtended\Settings\Settings;
 
 /**
@@ -33,7 +32,7 @@ class RemoteSettingsRepository
     ];
 
     /**
-     * @var \Algolia\AlgoliaSearch\SearchClient
+     * @var \Algolia\AlgoliaSearch\Api\SearchClient
      */
     private $client;
 
@@ -45,7 +44,7 @@ class RemoteSettingsRepository
     /**
      * RemoteRepository constructor.
      *
-     * @param \Algolia\AlgoliaSearch\SearchClient $client
+     * @param \Algolia\AlgoliaSearch\Api\SearchClient $client
      *
      * @return void
      */
@@ -63,9 +62,8 @@ class RemoteSettingsRepository
     {
         if ($this->defaults === null) {
             $indexName = 'temp-laravel-scout-extended';
-            $index = $this->client->initIndex($indexName);
-            $this->defaults = $this->getSettingsRaw($index);
-            $index->delete();
+            $this->defaults = $this->getSettingsRaw($indexName);
+            $this->client->deleteIndex($indexName);
         }
 
         return $this->defaults;
@@ -74,49 +72,49 @@ class RemoteSettingsRepository
     /**
      * Find the settings of the given Index.
      *
-     * @param  \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param  string $indexName
      *
      * @return \Algolia\ScoutExtended\Settings\Settings
      */
-    public function find(SearchIndex $index): Settings
+    public function find(string $indexName): Settings
     {
-        return new Settings($this->getSettingsRaw($index), $this->defaults());
+        return new Settings($this->getSettingsRaw($indexName), $this->defaults());
     }
 
     /**
-     * @param \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param string $indexName
      * @param \Algolia\ScoutExtended\Settings\Settings $settings
      *
      * @return void
      */
-    public function save(SearchIndex $index, Settings $settings): void
+    public function save(string $indexName, Settings $settings): void
     {
-        $index->setSettings($settings->compiled())->wait();
+        $response = $this->client->setSettings($indexName, $settings->compiled());
+        $this->client->waitForTask($indexName, $response['taskID']);
     }
 
     /**
-     * @param  \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param  string $indexName
      *
      * @return array
      */
-    public function getSettingsRaw(SearchIndex $index): array
+    public function getSettingsRaw(string $indexName): array
     {
         try {
-            $settings = $index->getSettings();
+            $rawSettings = $this->client->getSettings($indexName) ?? [];
         } catch (NotFoundException $e) {
-            $index->saveObject(['objectID' => 'temp'])->wait();
-            $settings = $index->getSettings();
-
-            $index->clearObjects();
+            $response = $this->client->setSettings($indexName, []);
+            $this->client->waitForTask($indexName, $response['taskID']);
+            $rawSettings = $this->client->getSettings($indexName) ?? [];
         }
 
         foreach (self::$aliases as $from => $to) {
-            if (array_key_exists($from, $settings)) {
-                $settings[$to] = $settings[$from];
-                unset($settings[$from]);
+            if (array_key_exists($from, $rawSettings)) {
+                $rawSettings[$to] = $rawSettings[$from];
+                unset($rawSettings[$from]);
             }
         }
 
-        return $settings;
+        return $rawSettings;
     }
 }

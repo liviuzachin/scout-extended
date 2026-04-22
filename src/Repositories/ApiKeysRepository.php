@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Algolia\ScoutExtended\Repositories;
 
-use Algolia\AlgoliaSearch\SearchClient;
+use Algolia\AlgoliaSearch\Api\SearchClient;
 use DateInterval;
 use Illuminate\Contracts\Cache\Repository;
 use function is_string;
@@ -34,7 +34,7 @@ class ApiKeysRepository
     private $cache;
 
     /**
-     * @var \Algolia\AlgoliaSearch\SearchClient
+     * @var \Algolia\AlgoliaSearch\Api\SearchClient
      */
     private $client;
 
@@ -42,7 +42,7 @@ class ApiKeysRepository
      * ApiKeysRepository constructor.
      *
      * @param \Illuminate\Contracts\Cache\Repository $cache
-     * @param \Algolia\AlgoliaSearch\SearchClient $client
+     * @param \Algolia\AlgoliaSearch\Api\SearchClient $client
      *
      * @return void
      */
@@ -68,24 +68,29 @@ class ApiKeysRepository
         if ($securedSearchKey === null) {
             $id = config('app.name').'::searchKey';
 
-            $keys = $this->client->listApiKeys()['keys'];
+            $response = $this->client->listApiKeys();
+            $keys = $response['keys'] ?? [];
 
             $searchKey = null;
 
             foreach ($keys as $key) {
-                if (array_key_exists('description', $key) && $key['description'] === $id) {
+                if (isset($key['description']) && $key['description'] === $id) {
                     $searchKey = $key['value'];
                 }
             }
 
-            $searchKey = $searchKey ?? $this->client->addApiKey(['search'], [
-                'description' => config('app.name').'::searchKey',
-            ])->getBody()['key'];
+            if ($searchKey === null) {
+                $addResponse = $this->client->addApiKey([
+                    'acl' => ['search'],
+                    'description' => config('app.name').'::searchKey',
+                ]);
+                $searchKey = $addResponse['key'];
+            }
 
             // Key will be valid for 25 hours.
             $validUntil = time() + (3600 * 25);
 
-            $securedSearchKey = $this->client::generateSecuredApiKey($searchKey, [
+            $securedSearchKey = $this->client->generateSecuredApiKey($searchKey, [
                 'restrictIndices' => $searchableAs,
                 'validUntil' => $validUntil,
             ]);

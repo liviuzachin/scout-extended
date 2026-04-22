@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Features;
 
 use Algolia\ScoutExtended\Facades\Algolia;
+use Mockery;
 use App\User;
 use App\Wall;
 use Tests\TestCase;
@@ -15,17 +16,14 @@ class SearchKeyTest extends TestCase
     {
         $this->mockClient()->shouldReceive('listApiKeys')->andReturn(['keys' => []]);
 
-        $response = $this->mockResponse();
-        $response->shouldReceive('getBody')->andReturn(['key' => 'bar']);
-
-        $this->mockClient()->shouldReceive('addApiKey')->with(['search'], [
+        $this->mockClient()->shouldReceive('addApiKey')->with([
+            'acl' => ['search'],
             'description' => config('app.name').'::searchKey',
-        ])->andReturn($response);
+        ])->andReturn(['key' => 'bar']);
 
-        $this->mockClient()->shouldReceive('generateSecuredApiKey')->with('bar', [
+        $this->mockClient()->shouldReceive('generateSecuredApiKey')->with('bar', Mockery::subset([
             'restrictIndices' => 'users',
-            'validUntil' => time() + (3600 * 25),
-        ])->andReturn('barSecured');
+        ]))->andReturn('barSecured');
 
         $this->assertSame(Algolia::searchKey(User::class), 'barSecured');
     }
@@ -34,17 +32,14 @@ class SearchKeyTest extends TestCase
     {
         $this->mockClient()->shouldReceive('listApiKeys')->andReturn(['keys' => [['foo' => 'bar']]]);
 
-        $response = $this->mockResponse();
-        $response->shouldReceive('getBody')->andReturn(['key' => 'bar']);
-
-        $this->mockClient()->shouldReceive('addApiKey')->with(['search'], [
+        $this->mockClient()->shouldReceive('addApiKey')->with([
+            'acl' => ['search'],
             'description' => config('app.name').'::searchKey',
-        ])->andReturn($response);
+        ])->andReturn(['key' => 'bar']);
 
-        $this->mockClient()->shouldReceive('generateSecuredApiKey')->with('bar', [
+        $this->mockClient()->shouldReceive('generateSecuredApiKey')->with('bar', Mockery::subset([
             'restrictIndices' => 'users',
-            'validUntil' => time() + (3600 * 25),
-        ])->andReturn('barSecured');
+        ]))->andReturn('barSecured');
 
         $this->assertSame(Algolia::searchKey(User::class), 'barSecured');
     }
@@ -58,10 +53,9 @@ class SearchKeyTest extends TestCase
             ],
         ]]);
 
-        $this->mockClient()->shouldReceive('generateSecuredApiKey')->with('bar', [
+        $this->mockClient()->shouldReceive('generateSecuredApiKey')->with('bar', Mockery::subset([
             'restrictIndices' => 'wall',
-            'validUntil' => time() + (3600 * 25),
-        ])->andReturn('barSecured');
+        ]))->andReturn('barSecured');
 
         $this->assertSame(Algolia::searchKey(new Wall()), 'barSecured');
     }

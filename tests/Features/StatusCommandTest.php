@@ -6,17 +6,17 @@ namespace Tests\Features;
 
 use App\User;
 use Illuminate\Support\Facades\Artisan;
+use Mockery;
 use Tests\TestCase;
 
 class StatusCommandTest extends TestCase
 {
     public function testStatus(): void
     {
-        $usersIndex = $this->mockIndex(User::class, $this->defaults());
-
-        $usersIndex->shouldReceive('search')->andReturn([
-            'nbHits' => 0,
-        ]);
+        $this->mockIndex(User::class, $this->defaults())
+            ->shouldReceive('searchSingleIndex')
+            ->with('users', Mockery::any())
+            ->andReturn(['hits' => [], 'nbHits' => 0]);
 
         Artisan::call('scout:status', ['searchable' => User::class]);
     }

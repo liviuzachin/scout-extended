@@ -21,7 +21,7 @@ class TransformersTest extends TestCase
     {
         $threadsIndexMock = $this->mockIndex('threads');
 
-        $threadsIndexMock->shouldReceive('saveObjects')->once()->with(\Mockery::on(function ($argument) {
+        $threadsIndexMock->shouldReceive('saveObjects')->once()->with('threads', \Mockery::on(function ($argument) {
             // Assert dates are converted to integers:
             return is_int($argument[0]['created_at']);
         }));
@@ -30,9 +30,10 @@ class TransformersTest extends TestCase
 
         $threadWithSearchableArray = new ThreadWithSearchableArray($thread->toArray());
 
-        $threadsIndexMock = $this->mockIndex($threadWithSearchableArray->searchableAs());
+        $threadWithSearchableArrayIndex = $threadWithSearchableArray->searchableAs();
+        $threadsIndexMock = $this->mockIndex($threadWithSearchableArrayIndex);
 
-        $threadsIndexMock->shouldReceive('saveObjects')->once()->with(\Mockery::on(function ($argument) {
+        $threadsIndexMock->shouldReceive('saveObjects')->once()->with($threadWithSearchableArrayIndex, \Mockery::on(function ($argument) {
             // Assert dates are NOT converted to integers:
             return ! is_int($argument[0]['created_at']);
         }));
@@ -46,7 +47,7 @@ class TransformersTest extends TestCase
     {
         $threadsIndexMock = $this->mockIndex('threads');
 
-        $threadsIndexMock->shouldReceive('saveObjects')->once()->with(\Mockery::on(function ($argument) {
+        $threadsIndexMock->shouldReceive('saveObjects')->once()->with('threads', \Mockery::on(function ($argument) {
             // Assert 'something' doesn't exist.
             return empty($argument[0]['something']);
         }));
@@ -55,9 +56,10 @@ class TransformersTest extends TestCase
 
         $threadWithSearchableArrayOnTrait = new ThreadWithSearchableArrayOnTrait($thread->toArray());
 
-        $threadsIndexMock = $this->mockIndex($threadWithSearchableArrayOnTrait->searchableAs());
+        $threadWithSearchableArrayOnTraitIndex = $threadWithSearchableArrayOnTrait->searchableAs();
+        $threadsIndexMock = $this->mockIndex($threadWithSearchableArrayOnTraitIndex);
 
-        $threadsIndexMock->shouldReceive('saveObjects')->once()->with(\Mockery::on(function ($argument) {
+        $threadsIndexMock->shouldReceive('saveObjects')->once()->with($threadWithSearchableArrayOnTraitIndex, \Mockery::on(function ($argument) {
             // Assert 'something' is defined.
             return $argument[0]['something'] === 99;
         }));
@@ -92,9 +94,10 @@ class TransformersTest extends TestCase
 
         $threadWithSearchableArrayUsingTransform = new ThreadWithSearchableArrayUsingTransform($thread->toArray());
 
-        $threadsIndexMock = $this->mockIndex($threadWithSearchableArrayUsingTransform->searchableAs());
+        $threadWithSearchableArrayUsingTransformIndex = $threadWithSearchableArrayUsingTransform->searchableAs();
+        $threadsIndexMock = $this->mockIndex($threadWithSearchableArrayUsingTransformIndex);
 
-        $threadsIndexMock->shouldReceive('saveObjects')->once()->with(\Mockery::on(function ($argument) {
+        $threadsIndexMock->shouldReceive('saveObjects')->once()->with($threadWithSearchableArrayUsingTransformIndex, \Mockery::on(function ($argument) {
             // Assert dates are NOT converted to integers:
             return $argument[0]['created_at'] === 'Foo';
         }));

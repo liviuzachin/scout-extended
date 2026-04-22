@@ -29,43 +29,46 @@ class ImportCommandTest extends TestCase
         factory(User::class, 5)->create();
         factory(EmptyItem::class, 2)->create();
 
+        $client = $this->mockClient();
+
         // Detects searchable models.
-        $userIndexMock = $this->mockIndex(User::class);
-        $userIndexMock->expects('clearObjects')->once();
-        $userIndexMock->expects('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $this->mockIndex(User::class);
+        $client->expects('clearObjects')->with('users')->once();
+        $client->expects('saveObjects')->with('users', Mockery::on(function ($argument) {
             return count($argument) === 5 && $argument[0]['objectID'] === 'App\User::1';
-        }));
+        }))->once();
 
         // Detects aggregators.
-        $wallIndexMock = $this->mockIndex(Wall::class);
-        $wallIndexMock->expects('clearObjects')->once();
-        $wallIndexMock->expects('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $this->mockIndex(Wall::class);
+        $client->expects('clearObjects')->with('wall')->once();
+        $client->expects('saveObjects')->with('wall', Mockery::on(function ($argument) {
             return count($argument) === 5 && $argument[0]['objectID'] === 'App\User::1';
-        }));
+        }))->once();
 
-        $allIndexMock = $this->mockIndex(All::class);
-        $allIndexMock->expects('clearObjects')->once();
-        $allIndexMock->expects('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $this->mockIndex(All::class);
+        $client->expects('clearObjects')->with('all')->once();
+        $client->expects('saveObjects')->with('all', Mockery::on(function ($argument) {
             return count($argument) === 5 && $argument[0]['objectID'] === 'App\User::1';
-        }));
+        }))->once();
 
-        $newsIndexMock = $this->mockIndex(News::class);
-        $newsIndexMock->expects('clearObjects')->once();
-        $newsIndexMock->expects('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $this->mockIndex(News::class);
+        $client->expects('clearObjects')->with('news')->once();
+        $client->expects('saveObjects')->with('news', Mockery::on(function ($argument) {
             return count($argument) === 5 && $argument[0]['objectID'] === 'App\User::1';
-        }));
+        }))->once();
 
         // Detects searchable models.
-        $threadIndexMock = $this->mockIndex(Thread::class);
-        $threadIndexMock->expects('clearObjects')->once();
+        $this->mockIndex(Thread::class);
+        $client->expects('clearObjects')->with('threads')->once();
 
         // Detects searchable models.
-        $emptyItemIndexMock = $this->mockIndex(EmptyItem::class);
-        $emptyItemIndexMock->expects('clearObjects')->once();
-        $emptyItemIndexMock->expects('saveObjects')->once()->with([]);
+        $emptyItemIndex = (new EmptyItem)->searchableAs();
+        $this->mockIndex(EmptyItem::class);
+        $client->expects('clearObjects')->with($emptyItemIndex)->once();
+        $client->expects('saveObjects')->with($emptyItemIndex, [])->once();
 
-        $termIndexMock = $this->mockIndex(Term::class);
-        $termIndexMock->expects('clearObjects')->once();
+        $this->mockIndex(Term::class);
+        $client->expects('clearObjects')->with('terms')->once();
 
         Artisan::call('scout:import');
     }

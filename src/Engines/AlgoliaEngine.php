@@ -13,48 +13,21 @@ declare(strict_types=1);
 
 namespace Algolia\ScoutExtended\Engines;
 
-use Algolia\AlgoliaSearch\SearchClient;
+use Algolia\AlgoliaSearch\Api\SearchClient;
 use Algolia\ScoutExtended\Jobs\DeleteJob;
 use Algolia\ScoutExtended\Jobs\UpdateJob;
 use Algolia\ScoutExtended\Searchable\ModelsResolver;
 use Algolia\ScoutExtended\Searchable\ObjectIdEncrypter;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
-use Laravel\Scout\Engines\Algolia3Engine;
-use Laravel\Scout\Scout;
-use function is_array;
 use Laravel\Scout\Builder;
+use Laravel\Scout\Engines\Algolia4Engine;
+use function is_array;
 
-if (version_compare(Scout::VERSION, '10.11.6', '>=')) {
-    // New Laravel Scout base class for Algolia
-    class_alias(Algolia3Engine::class, BaseAlgoliaEngine::class);
-} else {
-    // Legacy Laravel Scout class
-    class_alias(\Laravel\Scout\Engines\AlgoliaEngine::class, BaseAlgoliaEngine::class);
-}
-
-class AlgoliaEngine extends BaseAlgoliaEngine
+class AlgoliaEngine extends Algolia4Engine
 {
     /**
-     * The Algolia client.
-     *
-     * @var \Algolia\AlgoliaSearch\SearchClient
-     */
-    protected $algolia;
-
-    /**
-     * Create a new engine instance.
-     *
-     * @param  \Algolia\AlgoliaSearch\SearchClient $algolia
-     * @return void
-     */
-    public function __construct(SearchClient $algolia)
-    {
-        $this->algolia = $algolia;
-    }
-
-    /**
-     * @param \Algolia\AlgoliaSearch\SearchClient $algolia
+     * @param \Algolia\AlgoliaSearch\Api\SearchClient $algolia
      *
      * @return void
      */
@@ -66,7 +39,7 @@ class AlgoliaEngine extends BaseAlgoliaEngine
     /**
      * Get the client.
      *
-     * @return \Algolia\AlgoliaSearch\SearchClient $algolia
+     * @return \Algolia\AlgoliaSearch\Api\SearchClient
      */
     public function getClient(): SearchClient
     {
@@ -92,6 +65,29 @@ class AlgoliaEngine extends BaseAlgoliaEngine
     /**
      * {@inheritdoc}
      */
+    public function search(Builder $builder)
+    {
+        return $this->performSearch($builder, array_filter([
+            'numericFilters' => $this->filters($builder),
+            'hitsPerPage' => $builder->limit,
+        ]));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function paginate(Builder $builder, $perPage, $page)
+    {
+        return $this->performSearch($builder, [
+            'numericFilters' => $this->filters($builder),
+            'hitsPerPage' => $perPage,
+            'page' => $page - 1,
+        ]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function map(Builder $builder, $results, $searchable)
     {
         if (count($results['hits']) === 0) {
@@ -110,19 +106,9 @@ class AlgoliaEngine extends BaseAlgoliaEngine
     }
 
     /**
-     * {@inheritdoc}
+     * @return array
      */
-    public function flush($model)
-    {
-        $index = $this->algolia->initIndex($model->searchableAs());
-
-        $index->clearObjects();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function filters(Builder $builder): array
+    protected function filters(Builder $builder)
     {
         $operators = ['<', '<=', '=', '!=', '>=', '>', ':'];
 

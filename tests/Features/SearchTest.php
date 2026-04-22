@@ -7,40 +7,45 @@ namespace Tests\Features;
 use Algolia\ScoutExtended\Exceptions\ShouldReimportSearchableException;
 use App\Thread;
 use App\User;
+use Mockery;
 use Tests\TestCase;
 
 class SearchTest extends TestCase
 {
     public function testSearchEmpty(): void
     {
-        $threadIndexMock = $this->mockIndex(Thread::class);
-
-        $threadIndexMock->shouldReceive('search')->once()->andReturn([
-            'hits' => [],
-        ]);
+        $this->mockIndex(Thread::class)
+            ->shouldReceive('searchSingleIndex')
+            ->with('threads', Mockery::any())
+            ->once()
+            ->andReturn(['hits' => []]);
 
         $models = Thread::search('input')->get();
-        /* @var $models \Illuminate\Database\Eloquent\Collection */
+
         $this->assertCount(0, $models);
     }
 
     public function testSearchOrder(): void
     {
-        $threadIndexMock = $this->mockIndex(Thread::class);
+        $client = $this->mockIndex(Thread::class);
 
-        $threadIndexMock->shouldReceive('saveObjects')->times(3);
-        $threadIndexMock->shouldReceive('search')->once()->andReturn([
-            'hits' => [
-                ['objectID' => 'App\Thread::3'],
-                ['objectID' => 'App\Thread::1'],
-                ['objectID' => 'App\Thread::2'],
-            ],
-        ]);
+        $client->shouldReceive('saveObjects')->with('threads', Mockery::any())->times(3);
+
+        $client->shouldReceive('searchSingleIndex')
+            ->with('threads', Mockery::any())
+            ->once()
+            ->andReturn([
+                'hits' => [
+                    ['objectID' => 'App\Thread::3'],
+                    ['objectID' => 'App\Thread::1'],
+                    ['objectID' => 'App\Thread::2'],
+                ],
+            ]);
 
         $threads = factory(Thread::class, 3)->create();
 
         $models = Thread::search('input')->get();
-        /* @var $models \Illuminate\Database\Eloquent\Collection */
+
         $this->assertCount(3, $models);
 
         $this->assertInstanceOf(Thread::class, $models->get(0));
@@ -60,30 +65,33 @@ class SearchTest extends TestCase
     {
         $this->expectException(ShouldReimportSearchableException::class);
 
-        $threadIndexMock = $this->mockIndex(Thread::class);
-
-        $threadIndexMock->shouldReceive('search')->once()->andReturn([
-            'hits' => [
-                ['objectID' => '1'],
-            ],
-        ]);
+        $this->mockIndex(Thread::class)
+            ->shouldReceive('searchSingleIndex')
+            ->with('threads', Mockery::any())
+            ->once()
+            ->andReturn(['hits' => [['objectID' => '1']]]);
 
         Thread::search('input')->get();
     }
 
     public function testSearchContainsMetadata(): void
     {
-        $indexMock = $this->mockIndex(User::class);
-        $indexMock->expects('saveObjects')->once();
-        $indexMock->shouldReceive('search')->once()->andReturn([
-            'hits' => [
-                [
-                    'objectID' => 'App\User::1',
-                    '_highlightResult' => [],
-                    '_rankingInfo' => [],
+        $client = $this->mockIndex(User::class);
+
+        $client->expects('saveObjects')->with('users', Mockery::any())->once();
+
+        $client->shouldReceive('searchSingleIndex')
+            ->with('users', Mockery::any())
+            ->once()
+            ->andReturn([
+                'hits' => [
+                    [
+                        'objectID' => 'App\User::1',
+                        '_highlightResult' => [],
+                        '_rankingInfo' => [],
+                    ],
                 ],
-            ],
-        ]);
+            ]);
 
         factory(User::class)->create();
 

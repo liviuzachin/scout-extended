@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Features;
 
+use App\User;
 use Tests\TestCase;
 
 use function base_path;
@@ -15,6 +16,9 @@ class SearchableFinderTest extends TestCase
 {
     public function testWhenThereIsAnUnresolvableClass(): void
     {
+        $this->defaults();
+        $this->mockIndex(User::class);
+
         // inject a file that cannot be resolved
         $filePath = base_path('app/UnresolvableClass.php');
         file_put_contents(

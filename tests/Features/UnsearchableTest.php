@@ -15,8 +15,9 @@ class UnsearchableTest extends TestCase
 
         factory(User::class, 5)->create();
 
-        $usersIndex = $this->mockIndex(User::class);
-        $usersIndex->shouldReceive('browseObjects')->once()->with([
+        $client = $this->mockIndex(User::class);
+
+        $client->shouldReceive('browseObjects')->once()->with('users', [
             'attributesToRetrieve' => [
                 'objectID',
             ],
@@ -32,8 +33,9 @@ class UnsearchableTest extends TestCase
             ['objectID' => 'App\User::4'],
             ['objectID' => 'App\User::5'],
         ]);
-        $usersIndex->shouldReceive('deleteObjects')->once()->with([
-            'App\User::1', 'App\User::2', 'App\User::3', 'App\User::4', 'App\User::5'
+
+        $client->shouldReceive('deleteObjects')->once()->with('users', [
+            'App\User::1', 'App\User::2', 'App\User::3', 'App\User::4', 'App\User::5',
         ]);
 
         User::get()->unsearchable();
@@ -41,14 +43,18 @@ class UnsearchableTest extends TestCase
 
     public function testUnsearchableWithDeprecatedDeleteBy(): void
     {
+        $this->app['config']->set('scout.algolia.use_deprecated_delete_by', true);
+
         factory(User::class, 5)->create();
 
-        $usersIndex = $this->mockIndex(User::class);
-        $usersIndex->shouldReceive('deleteBy')->once()->with([
-            'tagFilters' => [
-                ['App\User::1', 'App\User::2', 'App\User::3', 'App\User::4', 'App\User::5'],
-            ],
-        ]);
+        $this->mockIndex(User::class)
+            ->shouldReceive('deleteBy')
+            ->once()
+            ->with('users', [
+                'tagFilters' => [
+                    ['App\User::1', 'App\User::2', 'App\User::3', 'App\User::4', 'App\User::5'],
+                ],
+            ]);
 
         User::get()->unsearchable();
     }

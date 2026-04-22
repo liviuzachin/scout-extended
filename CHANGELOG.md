@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [4.0.0](https://github.com/algolia/scout-extended/compare/v3.2.2...v4.0.0) - 2026-03-30
+### Changed
+- Algolia PHP client upgraded from v3 to v4 (`algolia/algoliasearch-client-php: ^4.39.1`). The v4 client uses a flat API — there are no more `SearchIndex` objects. All index operations (`saveObjects`, `deleteObjects`, `getSettings`, `setSettings`, `clearObjects`, `deleteIndex`, `searchSingleIndex`) now take `$indexName` as the first argument directly on the client.
+- Search callback `$algolia` argument changed type. In v3, the first argument passed to `Model::search()` callbacks was a `SearchIndex` object. In v4, it is the `SearchClient` directly. Any callback using the index object's methods (e.g. `->search()`) must be updated to use the flat client API (e.g. `->searchSingleIndex($indexName, $params)`).
+
+### Deprecated
+- `deleteBy` is deprecated. The `scout.algolia.use_deprecated_delete_by` config flag defaults to `false`. Deletion now uses `browseObjects` + `deleteObjects` instead.
+
+### Removed
+- PHP 8.0 support dropped. Minimum version raised to `^8.1` (required by the v4 Algolia client).
+- Laravel 9 support dropped. Minimum Laravel/Illuminate version is now `^10.0`.
+- Laravel Scout 9.x and 10.0–10.11.5 support dropped. Minimum version raised to `^10.11.6`, which introduced `Algolia4Engine` required by the v4 client.
+
+## [3.2.2](https://github.com/algolia/scout-extended/compare/v3.2.1...v3.2.2) - 2025-06-04
+### Fixed
+- Fix AggregatorObserver sync status ([#356](https://github.com/algolia/scout-extended/pull/356))
+
 ## [3.2.1](https://github.com/algolia/scout-extended/compare/v3.2.0...v3.2.1) - 2025-04-16
 ### Fixed
 - Check if index exists before force creating ([#357](https://github.com/algolia/scout-extended/pull/357))

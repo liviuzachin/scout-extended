@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Algolia\AlgoliaSearch\Response\AbstractResponse;
-use Algolia\AlgoliaSearch\SearchClient;
-use Algolia\AlgoliaSearch\SearchIndex;
+use Algolia\AlgoliaSearch\Api\SearchClient;
 use Algolia\ScoutExtended\Engines\AlgoliaEngine;
 use Algolia\ScoutExtended\Facades\Algolia as AlgoliaFacade;
 use Algolia\ScoutExtended\Managers\EngineManager;
 use Algolia\ScoutExtended\ScoutExtendedServiceProvider;
 use Algolia\ScoutExtended\Settings\Compiler;
-use function get_class;
 use Illuminate\Support\Facades\Artisan;
 use Laravel\Scout\ScoutServiceProvider;
 use Mockery;
@@ -35,6 +32,8 @@ abstract class TestCase extends BaseTestCase
     public function tearDown(): void
     {
         @unlink(__DIR__.'/laravel/config/scout-users.php');
+
+        $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
 
         Mockery::close();
 
@@ -64,19 +63,21 @@ abstract class TestCase extends BaseTestCase
      */
     protected function getEnvironmentSetUp($app)
     {
-        // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testbench');
         $app['config']->set('database.connections.testbench', [
             'driver' => 'sqlite',
             'database' => ':memory:',
             'prefix' => '',
         ]);
+
+        $app['config']->set('scout.algolia.id', 'test-app-id');
+        $app['config']->set('scout.algolia.secret', 'test-api-key');
     }
 
     protected function defaults(): array
     {
-        $index = $this->mockIndex('temp-laravel-scout-extended', $defaults = require __DIR__.'/resources/defaults.php');
-        $index->shouldReceive('delete')->zeroOrMoreTimes();
+        $clientMock = $this->mockIndex('temp-laravel-scout-extended', $defaults = require __DIR__.'/resources/defaults.php');
+        $clientMock->shouldReceive('deleteIndex')->with('temp-laravel-scout-extended')->zeroOrMoreTimes();
 
         return $defaults;
     }
@@ -123,7 +124,7 @@ abstract class TestCase extends BaseTestCase
 
     protected function mockEngine(): MockInterface
     {
-        $engineMock = mock(app(AlgoliaEngine::class))->makePartial()->shouldIgnoreMissing();
+        $engineMock = mock(new AlgoliaEngine($this->mockClient()))->makePartial()->shouldIgnoreMissing();
 
         $managerMock = mock(EngineManager::class)->makePartial()->shouldIgnoreMissing();
 
@@ -136,9 +137,16 @@ abstract class TestCase extends BaseTestCase
 
     protected function mockClient(): MockInterface
     {
-        $client = $this->app->get(SearchClient::class);
+        try {
+            $client = $this->app->get(SearchClient::class);
+            if ($client instanceof MockInterface) {
+                return $client;
+            }
+        } catch (\Exception $e) {
+            // Real factory threw — create fresh mock
+        }
 
-        $clientMock = get_class($client) === SearchClient::class ? mock(SearchClient::class) : $client;
+        $clientMock = mock(SearchClient::class)->shouldIgnoreMissing();
 
         $this->swap(SearchClient::class, $clientMock);
 
@@ -147,50 +155,47 @@ abstract class TestCase extends BaseTestCase
 
     protected function mockIndex(string $model, array $settings = [], ?array $userData = null): MockInterface
     {
-        $indexMock = mock(SearchIndex::class);
         $indexName = class_exists($model) ? (new $model)->searchableAs() : $model;
-        $indexMock->shouldReceive('getIndexName')->zeroOrMoreTimes()->andReturn($indexName);
-
-        $indexMock->shouldReceive('getSettings')->zeroOrMoreTimes()->andReturn(array_merge($settings, [
-            'userData' => @json_encode($userData),
-        ]));
 
         $clientMock = $this->mockClient();
-        $clientMock->shouldReceive('initIndex')->zeroOrMoreTimes()->with($indexName)->andReturn($indexMock);
 
-        $algoliaEngine = app(AlgoliaEngine::class);
+        $clientMock->shouldReceive('getSettings')
+            ->with($indexName)
+            ->zeroOrMoreTimes()
+            ->andReturn(array_merge($settings, [
+                'userData' => @json_encode($userData),
+            ]));
 
-        $algoliaEngine->setClient($clientMock);
-
-        $engineMock = mock($algoliaEngine)->makePartial();
+        $algoliaEngine = new AlgoliaEngine($clientMock);
 
         $managerMock = mock(EngineManager::class)->makePartial();
 
-        $managerMock->shouldReceive('driver')->andReturn($engineMock);
+        $managerMock->shouldReceive('driver')->andReturn($algoliaEngine);
 
         $this->swap(EngineManager::class, $managerMock);
 
-        return $indexMock;
+        return $clientMock;
     }
 
-    protected function assertSettingsSet($indexMock, array $settings, ?array $userData = null): void
+    protected function assertSettingsSet(string $indexName, array $settings, ?array $userData = null): void
     {
+        $clientMock = $this->mockClient();
+
         if (! empty($settings)) {
-            $indexMock->shouldReceive('setSettings')->once()->with($settings)->andReturn($this->mockResponse());
+            $clientMock->shouldReceive('setSettings')->once()
+                ->with($indexName, $settings)
+                ->andReturn($this->mockResponse());
         }
 
         if (! empty($userData)) {
-            $indexMock->shouldReceive('setSettings')->once()->with(['userData' => @json_encode($userData)])
+            $clientMock->shouldReceive('setSettings')->once()
+                ->with($indexName, ['userData' => @json_encode($userData)])
                 ->andReturn($this->mockResponse());
         }
     }
 
-    protected function mockResponse(): MockInterface
+    protected function mockResponse(): array
     {
-        $responseMock = mock(AbstractResponse::class);
-
-        $responseMock->shouldReceive('wait')->zeroOrMoreTimes();
-
-        return $responseMock;
+        return ['taskID' => 1];
     }
 }

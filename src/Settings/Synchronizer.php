@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Algolia\ScoutExtended\Settings;
 
-use Algolia\AlgoliaSearch\SearchIndex;
 use Algolia\ScoutExtended\Contracts\LocalSettingsRepositoryContract;
 use Algolia\ScoutExtended\Repositories\RemoteSettingsRepository;
 use Algolia\ScoutExtended\Repositories\UserDataRepository;
@@ -76,51 +75,51 @@ class Synchronizer
     /**
      * Analyses the settings of the given index.
      *
-     * @param \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param string $indexName
      *
      * @return \Algolia\ScoutExtended\Settings\Status
      */
-    public function analyse(SearchIndex $index): Status
+    public function analyse(string $indexName): Status
     {
-        $remoteSettings = $this->remoteRepository->find($index);
+        $remoteSettings = $this->remoteRepository->find($indexName);
 
-        return new Status($this->localRepository, $this->userDataRepository, $this->encrypter, $remoteSettings, $index);
+        return new Status($this->localRepository, $this->userDataRepository, $this->encrypter, $remoteSettings, $indexName);
     }
 
     /**
      * Downloads the settings of the given index.
      *
-     * @param \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param string $indexName
      *
      * @return void
      */
-    public function download(SearchIndex $index): void
+    public function download(string $indexName): void
     {
-        $settings = $this->remoteRepository->find($index);
+        $settings = $this->remoteRepository->find($indexName);
 
-        $path = $this->localRepository->getPath($index);
+        $path = $this->localRepository->getPath($indexName);
 
         $this->compiler->compile($settings, $path);
 
         $settingsHash = $this->encrypter->encrypt($settings);
 
-        $this->userDataRepository->save($index, ['settingsHash' => $settingsHash]);
+        $this->userDataRepository->save($indexName, ['settingsHash' => $settingsHash]);
     }
 
     /**
      * Uploads the settings of the given index.
      *
-     * @param \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param string $indexName
      *
      * @return void
      */
-    public function upload(SearchIndex $index): void
+    public function upload(string $indexName): void
     {
-        $settings = $this->localRepository->find($index);
+        $settings = $this->localRepository->find($indexName);
 
         $settingsHash = $this->encrypter->encrypt($settings);
 
-        $this->userDataRepository->save($index, ['settingsHash' => $settingsHash]);
-        $this->remoteRepository->save($index, $settings);
+        $this->userDataRepository->save($indexName, ['settingsHash' => $settingsHash]);
+        $this->remoteRepository->save($indexName, $settings);
     }
 }

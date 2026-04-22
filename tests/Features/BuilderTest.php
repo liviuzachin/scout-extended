@@ -21,7 +21,10 @@ class BuilderTest extends TestCase
 
     public function testWith(): void
     {
-        $this->mockIndex(User::class)->expects('search')->with('foo', Mockery::subset(['aroundRadius' => 1]))->andReturn(['hits' => []]);
+        $this->mockIndex(User::class)
+            ->expects('searchSingleIndex')
+            ->with('users', Mockery::subset(['query' => 'foo', 'aroundRadius' => 1]))
+            ->andReturn(['hits' => []]);
 
         User::search('foo')->with(['aroundRadius' => 1])->get();
     }
@@ -29,13 +32,11 @@ class BuilderTest extends TestCase
     public function testWhereOptional(): void
     {
         $this->mockIndex(User::class)
-            ->expects('search')
-            ->with(
-                'foo',
-                Mockery::subset([
-                    'optionalFilters' => 'sub1.id:1,sub2.name:hello',
-                    'queryLanguages' => ['fr', 'nl'],
-                ]))
+            ->expects('searchSingleIndex')
+            ->with('users', Mockery::subset([
+                'optionalFilters' => 'sub1.id:1,sub2.name:hello',
+                'queryLanguages' => ['fr', 'nl'],
+            ]))
             ->andReturn(['hits' => []]);
 
         User::search('foo')
@@ -48,13 +49,11 @@ class BuilderTest extends TestCase
     public function testWhereOptionalAndWith(): void
     {
         $this->mockIndex(User::class)
-            ->expects('search')
-            ->with(
-                'foo',
-                Mockery::subset([
-                    'optionalFilters' => 'price:100',
-                    'queryLanguages' => ['fr', 'nl'],
-                ]))
+            ->expects('searchSingleIndex')
+            ->with('users', Mockery::subset([
+                'optionalFilters' => 'price:100',
+                'queryLanguages' => ['fr', 'nl'],
+            ]))
             ->andReturn(['hits' => []]);
 
         User::search('foo')
@@ -70,13 +69,11 @@ class BuilderTest extends TestCase
     public function testWithAndWhereOptional(): void
     {
         $this->mockIndex(User::class)
-            ->expects('search')
-            ->with(
-                'foo',
-                Mockery::subset([
-                    'optionalFilters' => 'sub1.id:1,sub2.name:hello',
-                    'queryLanguages' => ['fr', 'nl'],
-                ]))
+            ->expects('searchSingleIndex')
+            ->with('users', Mockery::subset([
+                'optionalFilters' => 'sub1.id:1,sub2.name:hello',
+                'queryLanguages' => ['fr', 'nl'],
+            ]))
             ->andReturn(['hits' => []]);
 
         User::search('foo')
@@ -91,7 +88,10 @@ class BuilderTest extends TestCase
 
     public function testAroundLatLng(): void
     {
-        $this->mockIndex(User::class)->expects('search')->with('bar', Mockery::subset(['aroundLatLng' => '48.8566,2.3522']))->andReturn(['hits' => []]);
+        $this->mockIndex(User::class)
+            ->expects('searchSingleIndex')
+            ->with('users', Mockery::subset(['query' => 'bar', 'aroundLatLng' => '48.8566,2.3522']))
+            ->andReturn(['hits' => []]);
 
         User::search('bar')->aroundLatLng(48.8566, 2.3522)->get();
     }

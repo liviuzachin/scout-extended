@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace Algolia\ScoutExtended\Repositories;
 
-use Algolia\AlgoliaSearch\SearchIndex;
 use Algolia\ScoutExtended\Contracts\LocalSettingsRepositoryContract;
 use Algolia\ScoutExtended\Settings\Settings;
 use Illuminate\Filesystem\Filesystem;
@@ -49,27 +48,25 @@ class LocalSettingsRepository implements LocalSettingsRepositoryContract
     /**
      * Checks if the given index settings exists.
      *
-     * @param  \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param  string $indexName
      *
      * @return bool
      */
-    public function exists(SearchIndex $index): bool
+    public function exists(string $indexName): bool
     {
-        return $this->files->exists($this->getPath($index));
+        return $this->files->exists($this->getPath($indexName));
     }
 
     /**
      * Get the settings path of the given index name.
      *
-     * @param  \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param  string $indexName
      *
      * @return string
      */
-    public function getPath(SearchIndex $index): string
+    public function getPath(string $indexName): string
     {
-        $name = str_replace('_', '-', $index->getIndexName());
-
-        $name = is_array($name) ? current($name) : $name;
+        $name = str_replace('_', '-', $indexName);
 
         $fileName = 'scout-'.Str::lower($name).'.php';
         $settingsPath = config('scout.algolia.settings_path');
@@ -88,13 +85,13 @@ class LocalSettingsRepository implements LocalSettingsRepositoryContract
     /**
      * Find the settings of the given Index.
      *
-     * @param \Algolia\AlgoliaSearch\SearchIndex $index
+     * @param string $indexName
      *
      * @return \Algolia\ScoutExtended\Settings\Settings
      */
-    public function find(SearchIndex $index): Settings
+    public function find(string $indexName): Settings
     {
-        return new Settings(($this->exists($index) ? require $this->getPath($index) : []),
+        return new Settings(($this->exists($indexName) ? require $this->getPath($indexName) : []),
             $this->remoteRepository->defaults());
     }
 }

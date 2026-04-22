@@ -20,14 +20,14 @@ class SplittersTest extends TestCase
 
         $index = $this->mockIndex(ThreadWithSplitterClass::class);
 
-        $index->shouldReceive('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $index->shouldReceive('saveObjects')->once()->with('threads', Mockery::on(function ($argument) {
             return count($argument) === 2 &&
                 $argument[0]['objectID'] === 'Tests\Features\Fixtures\ThreadWithSplitterClass::1::0' &&
                 $argument[1]['objectID'] === 'Tests\Features\Fixtures\ThreadWithSplitterClass::1::1' &&
                 $argument[0]['body'] === 'Hello Foo!' && $argument[1]['body'] === 'Hello Bar!';
         }))->andReturn($this->mockResponse());
 
-        $index->shouldReceive('browseObjects')->once()->with([
+        $index->shouldReceive('browseObjects')->once()->with('threads', [
             'attributesToRetrieve' => [
                 'objectID',
             ],
@@ -39,7 +39,7 @@ class SplittersTest extends TestCase
         ])->andReturn([
             ['objectID' => 'Tests\Features\Fixtures\ThreadWithSplitterClass::1'],
         ]);
-        $index->shouldReceive('deleteObjects')->once()->with([
+        $index->shouldReceive('deleteObjects')->once()->with('threads', [
             'Tests\Features\Fixtures\ThreadWithSplitterClass::1',
         ]);
 
@@ -53,16 +53,18 @@ class SplittersTest extends TestCase
 
     public function testRecordsAreSplittedByASplitterWithDeprecatedDeleteBy(): void
     {
+        $this->app['config']->set('scout.algolia.use_deprecated_delete_by', true);
+
         $index = $this->mockIndex(ThreadWithSplitterClass::class);
 
-        $index->shouldReceive('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $index->shouldReceive('saveObjects')->once()->with('threads', Mockery::on(function ($argument) {
             return count($argument) === 2 &&
                 $argument[0]['objectID'] === 'Tests\Features\Fixtures\ThreadWithSplitterClass::1::0' &&
                 $argument[1]['objectID'] === 'Tests\Features\Fixtures\ThreadWithSplitterClass::1::1' &&
                 $argument[0]['body'] === 'Hello Foo!' && $argument[1]['body'] === 'Hello Bar!';
         }))->andReturn($this->mockResponse());
 
-        $index->shouldReceive('deleteBy')->once()->with([
+        $index->shouldReceive('deleteBy')->once()->with('threads', [
             'tagFilters' => [
                 ['Tests\Features\Fixtures\ThreadWithSplitterClass::1'],
             ],
@@ -82,14 +84,14 @@ class SplittersTest extends TestCase
 
         $index = $this->mockIndex(ThreadWithValueReturned::class);
 
-        $index->shouldReceive('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $index->shouldReceive('saveObjects')->once()->with('threads', Mockery::on(function ($argument) {
             return count($argument) === 2 &&
                 $argument[0]['objectID'] === 'Tests\Features\Fixtures\ThreadWithValueReturned::1::0' &&
                 $argument[1]['objectID'] === 'Tests\Features\Fixtures\ThreadWithValueReturned::1::1' &&
                 $argument[0]['body'] === 'Hello Foo!' && $argument[1]['body'] === 'Hello Bar!';
         }))->andReturn($this->mockResponse());
 
-        $index->shouldReceive('browseObjects')->once()->with([
+        $index->shouldReceive('browseObjects')->once()->with('threads', [
             'attributesToRetrieve' => [
                 'objectID',
             ],
@@ -101,7 +103,7 @@ class SplittersTest extends TestCase
         ])->andReturn([
             ['objectID' => 'Tests\Features\Fixtures\ThreadWithValueReturned::1'],
         ]);
-        $index->shouldReceive('deleteObjects')->once()->with([
+        $index->shouldReceive('deleteObjects')->once()->with('threads', [
             'Tests\Features\Fixtures\ThreadWithValueReturned::1',
         ]);
 
@@ -115,16 +117,18 @@ class SplittersTest extends TestCase
 
     public function testRecordsAreTextSplittedByValueWithDeprecatedDeleteBy(): void
     {
+        $this->app['config']->set('scout.algolia.use_deprecated_delete_by', true);
+
         $index = $this->mockIndex(ThreadWithValueReturned::class);
 
-        $index->shouldReceive('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $index->shouldReceive('saveObjects')->once()->with('threads', Mockery::on(function ($argument) {
             return count($argument) === 2 &&
                 $argument[0]['objectID'] === 'Tests\Features\Fixtures\ThreadWithValueReturned::1::0' &&
                 $argument[1]['objectID'] === 'Tests\Features\Fixtures\ThreadWithValueReturned::1::1' &&
                 $argument[0]['body'] === 'Hello Foo!' && $argument[1]['body'] === 'Hello Bar!';
         }))->andReturn($this->mockResponse());
 
-        $index->shouldReceive('deleteBy')->with([
+        $index->shouldReceive('deleteBy')->with('threads', [
             'tagFilters' => [
                 ['Tests\Features\Fixtures\ThreadWithValueReturned::1'],
             ],
@@ -144,14 +148,14 @@ class SplittersTest extends TestCase
 
         $index = $this->mockIndex(ThreadWithSplitterInstance::class);
 
-        $index->shouldReceive('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $index->shouldReceive('saveObjects')->once()->with('threads', Mockery::on(function ($argument) {
             return count($argument) === 2 &&
                 $argument[0]['objectID'] === 'Tests\Features\Fixtures\ThreadWithSplitterInstance::1::0' &&
                 $argument[1]['objectID'] === 'Tests\Features\Fixtures\ThreadWithSplitterInstance::1::1' &&
                 $argument[0]['body'] === 'Hello Foo!' && $argument[1]['body'] === 'Hello Bar!';
         }))->andReturn($this->mockResponse());
 
-        $index->shouldReceive('browseObjects')->once()->with([
+        $index->shouldReceive('browseObjects')->once()->with('threads', [
             'attributesToRetrieve' => [
                 'objectID',
             ],
@@ -163,7 +167,7 @@ class SplittersTest extends TestCase
         ])->andReturn([
             ['objectID' => 'Tests\Features\Fixtures\ThreadWithSplitterInstance::1'],
         ]);
-        $index->shouldReceive('deleteObjects')->once()->with([
+        $index->shouldReceive('deleteObjects')->once()->with('threads', [
             'Tests\Features\Fixtures\ThreadWithSplitterInstance::1',
         ]);
 
@@ -177,16 +181,18 @@ class SplittersTest extends TestCase
 
     public function testRecordsAreTextSplittedSplitterInstanceWithDeprecatedDeleteBy(): void
     {
+        $this->app['config']->set('scout.algolia.use_deprecated_delete_by', true);
+
         $index = $this->mockIndex(ThreadWithSplitterInstance::class);
 
-        $index->shouldReceive('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $index->shouldReceive('saveObjects')->once()->with('threads', Mockery::on(function ($argument) {
             return count($argument) === 2 &&
                 $argument[0]['objectID'] === 'Tests\Features\Fixtures\ThreadWithSplitterInstance::1::0' &&
                 $argument[1]['objectID'] === 'Tests\Features\Fixtures\ThreadWithSplitterInstance::1::1' &&
                 $argument[0]['body'] === 'Hello Foo!' && $argument[1]['body'] === 'Hello Bar!';
         }))->andReturn($this->mockResponse());
 
-        $index->shouldReceive('deleteBy')->with([
+        $index->shouldReceive('deleteBy')->with('threads', [
             'tagFilters' => [
                 ['Tests\Features\Fixtures\ThreadWithSplitterInstance::1'],
             ],
@@ -206,7 +212,7 @@ class SplittersTest extends TestCase
 
         $index = $this->mockIndex(ThreadMultipleSplits::class);
 
-        $index->shouldReceive('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $index->shouldReceive('saveObjects')->once()->with('threads', Mockery::on(function ($argument) {
             return count($argument) === 8 && $argument[0]['objectID'] === 'Tests\Features\Fixtures\ThreadMultipleSplits::1::0' &&
                 $argument[1]['objectID'] === 'Tests\Features\Fixtures\ThreadMultipleSplits::1::1' &&
                 $argument[2]['objectID'] === 'Tests\Features\Fixtures\ThreadMultipleSplits::1::2' &&
@@ -229,7 +235,7 @@ class SplittersTest extends TestCase
                 $argument[7]['slug'] === 'second' && $argument[7]['description_at_the_letter'] === 2;
         }))->andReturn($this->mockResponse());
 
-        $index->shouldReceive('browseObjects')->once()->with([
+        $index->shouldReceive('browseObjects')->once()->with('threads', [
             'attributesToRetrieve' => [
                 'objectID',
             ],
@@ -241,7 +247,7 @@ class SplittersTest extends TestCase
         ])->andReturn([
             ['objectID' => 'Tests\Features\Fixtures\ThreadMultipleSplits::1'],
         ]);
-        $index->shouldReceive('deleteObjects')->once()->with([
+        $index->shouldReceive('deleteObjects')->once()->with('threads', [
             'Tests\Features\Fixtures\ThreadMultipleSplits::1',
         ]);
 
@@ -259,9 +265,11 @@ class SplittersTest extends TestCase
 
     public function testRecordsCanHaveMultipleSplitsWithDeprecatedDeleteBy(): void
     {
+        $this->app['config']->set('scout.algolia.use_deprecated_delete_by', true);
+
         $index = $this->mockIndex(ThreadMultipleSplits::class);
 
-        $index->shouldReceive('saveObjects')->once()->with(Mockery::on(function ($argument) {
+        $index->shouldReceive('saveObjects')->once()->with('threads', Mockery::on(function ($argument) {
             return count($argument) === 8 && $argument[0]['objectID'] === 'Tests\Features\Fixtures\ThreadMultipleSplits::1::0' &&
                 $argument[1]['objectID'] === 'Tests\Features\Fixtures\ThreadMultipleSplits::1::1' &&
                 $argument[2]['objectID'] === 'Tests\Features\Fixtures\ThreadMultipleSplits::1::2' &&
@@ -284,7 +292,7 @@ class SplittersTest extends TestCase
                 $argument[7]['slug'] === 'second' && $argument[7]['description_at_the_letter'] === 2;
         }))->andReturn($this->mockResponse());
 
-        $index->shouldReceive('deleteBy')->with([
+        $index->shouldReceive('deleteBy')->with('threads', [
             'tagFilters' => [
                 ['Tests\Features\Fixtures\ThreadMultipleSplits::1'],
             ],
@@ -322,7 +330,7 @@ class SplittersTest extends TestCase
         ThreadWithValueReturned::create(['body' => $body]);
         ThreadWithValueReturned::create(['body' => 'Hello John']);
 
-        $index->shouldReceive('search')->once()->andReturn([
+        $index->shouldReceive('searchSingleIndex')->once()->with('threads', Mockery::any())->andReturn([
             'hits' => [
                 [
                     'body' => 'Hello Foo!',
@@ -349,6 +357,8 @@ class SplittersTest extends TestCase
 
     public function testSearchMethodWithDeprecatedDeleteBy(): void
     {
+        $this->app['config']->set('scout.algolia.use_deprecated_delete_by', true);
+
         $index = $this->mockIndex(ThreadWithValueReturned::class);
 
         $index->shouldReceive('saveObjects')->twice();
@@ -362,7 +372,7 @@ class SplittersTest extends TestCase
         ThreadWithValueReturned::create(['body' => $body]);
         ThreadWithValueReturned::create(['body' => 'Hello John']);
 
-        $index->shouldReceive('search')->once()->andReturn([
+        $index->shouldReceive('searchSingleIndex')->once()->with('threads', Mockery::any())->andReturn([
             'hits' => [
                 [
                     'body' => 'Hello Foo!',

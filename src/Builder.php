@@ -15,7 +15,6 @@ namespace Algolia\ScoutExtended;
 
 use Illuminate\Support\Collection;
 use function func_num_args;
-use function is_callable;
 use Laravel\Scout\Builder as BaseBuilder;
 
 class Builder extends BaseBuilder
@@ -109,7 +108,7 @@ class Builder extends BaseBuilder
      */
     public function whereIn($field, $values): self
     {
-        if(! empty($values)) {
+        if (! empty($values)) {
             $wheres = array_map(function ($value) use ($field) {
                 return "$field={$this->transform($value)}";
             }, array_values($values));
@@ -149,17 +148,7 @@ class Builder extends BaseBuilder
      */
     public function with(array $parameters): self
     {
-        $callback = $this->callback;
-
-        $this->callback = function ($algolia, $query, $baseParameters) use ($parameters, $callback) {
-            $parameters = array_merge($parameters, $baseParameters);
-
-            if (is_callable($callback)) {
-                return $callback($algolia, $query, $parameters);
-            }
-
-            return $algolia->search($query, $parameters);
-        };
+        $this->options = array_merge($this->options, $parameters);
 
         return $this;
     }
