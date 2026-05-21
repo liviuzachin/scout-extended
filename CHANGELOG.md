@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [5.0.0](https://github.com/algolia/scout-extended/compare/v4.0.0...v5.0.0) - 2026-04-28
+### Changed
+- Laravel Scout minimum version raised to `^11.0.0`. Scout v11 removes `numericFilters` in favour of the `filters` string parameter. Where conditions are now stored using Scout v11's structured `['field', 'operator', 'value']` format and `$whereIns` property, removing all manual `$wheres` manipulation.
+- `filters()` return type changed from `array` to `string`. Any subclass overriding `filters()` must be updated to return a boolean expression string (e.g. `field > 100 AND (id=1 OR id=2)`) instead of an array.
+- The engine now uses the `filters` key instead of `numericFilters`. Any manual `->with(['filters' => '...'])` call will be overwritten by the engine's computed filters. Users combining `->with(['filters' => ...])` alongside `where()` clauses need to move all filter conditions into `where()` / `whereIn()` / `whereNotIn()` calls instead.
+
+### Removed
+- Laravel Scout 10.x support dropped. Minimum version raised to `^11.0.0`.
+
 ## [4.0.0](https://github.com/algolia/scout-extended/compare/v3.2.2...v4.0.0) - 2026-03-30
 ### Changed
 - Algolia PHP client upgraded from v3 to v4 (`algolia/algoliasearch-client-php: ^4.39.1`). The v4 client uses a flat API — there are no more `SearchIndex` objects. All index operations (`saveObjects`, `deleteObjects`, `getSettings`, `setSettings`, `clearObjects`, `deleteIndex`, `searchSingleIndex`) now take `$indexName` as the first argument directly on the client.
@@ -298,4 +307,4 @@ EngineManager
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/algolia/scout-extended/compare/v1.19.0...HEAD
+[Unreleased]: https://github.com/algolia/scout-extended/compare/v5.0.0...HEAD

@@ -15,34 +15,10 @@ class WhereQueriesTest extends TestCase
         $this->mockIndex(User::class)
             ->shouldReceive('searchSingleIndex')
             ->once()
-            ->with('users', Mockery::subset(['query' => 'foo', 'numericFilters' => ['views_count != 100']]))
+            ->with('users', Mockery::subset(['query' => 'foo', 'filters' => 'views_count != 100']))
             ->andReturn(['hits' => []]);
 
         User::search('foo')->where('views_count', '!=', '100')->get();
-    }
-
-    public function testInlineOperators(): void
-    {
-        $this->mockIndex(User::class)
-            ->shouldReceive('searchSingleIndex')
-            ->once()
-            ->with('users', Mockery::subset(['query' => 'foo', 'numericFilters' => ['views_count > 100']]))
-            ->andReturn(['hits' => []]);
-
-        User::search('foo')->where('views_count', '> 100')->get();
-    }
-
-    public function testWithDates(): void
-    {
-        $this->mockIndex(User::class)
-            ->shouldReceive('searchSingleIndex')
-            ->once()
-            ->with('users', Mockery::subset(['query' => 'foo', 'numericFilters' => [
-                'views_count > '.($date = now())->getTimestamp(),
-            ]]))
-            ->andReturn(['hits' => []]);
-
-        User::search('foo')->where('views_count', '>', $date)->get();
     }
 
     public function testOmittedOperator(): void
@@ -50,10 +26,21 @@ class WhereQueriesTest extends TestCase
         $this->mockIndex(User::class)
             ->shouldReceive('searchSingleIndex')
             ->once()
-            ->with('users', Mockery::subset(['query' => 'foo', 'numericFilters' => ['views_count=100']]))
+            ->with('users', Mockery::subset(['query' => 'foo', 'filters' => 'views_count=100']))
             ->andReturn(['hits' => []]);
 
         User::search('foo')->where('views_count', '100')->get();
+    }
+
+    public function testWithDates(): void
+    {
+        $this->mockIndex(User::class)
+            ->shouldReceive('searchSingleIndex')
+            ->once()
+            ->with('users', Mockery::subset(['query' => 'foo', 'filters' => 'views_count > '.($date = now())->getTimestamp()]))
+            ->andReturn(['hits' => []]);
+
+        User::search('foo')->where('views_count', '>', $date)->get();
     }
 
     public function testWhereBetween(): void
@@ -61,7 +48,7 @@ class WhereQueriesTest extends TestCase
         $this->mockIndex(User::class)
             ->shouldReceive('searchSingleIndex')
             ->once()
-            ->with('users', Mockery::subset(['query' => 'foo', 'numericFilters' => ['views_count: 100 TO 200']]))
+            ->with('users', Mockery::subset(['query' => 'foo', 'filters' => 'views_count: 100 TO 200']))
             ->andReturn(['hits' => []]);
 
         User::search('foo')->whereBetween('views_count', [100, 200])->get();
@@ -75,9 +62,7 @@ class WhereQueriesTest extends TestCase
         $this->mockIndex(User::class)
             ->shouldReceive('searchSingleIndex')
             ->once()
-            ->with('users', Mockery::subset(['query' => 'foo', 'numericFilters' => [
-                "created_at: {$date1->getTimestamp()} TO {$date2->getTimestamp()}",
-            ]]))
+            ->with('users', Mockery::subset(['query' => 'foo', 'filters' => "created_at: {$date1->getTimestamp()} TO {$date2->getTimestamp()}"]))
             ->andReturn(['hits' => []]);
 
         User::search('foo')->whereBetween('created_at', [$date1, $date2])->get();
@@ -88,9 +73,7 @@ class WhereQueriesTest extends TestCase
         $this->mockIndex(User::class)
             ->shouldReceive('searchSingleIndex')
             ->once()
-            ->with('users', Mockery::subset(['query' => 'foo', 'numericFilters' => [
-                ['id=1', 'id=2', 'id=3', 'id=4'],
-            ]]))
+            ->with('users', Mockery::subset(['query' => 'foo', 'filters' => '(id=1 OR id=2 OR id=3 OR id=4)']))
             ->andReturn(['hits' => []]);
 
         User::search('foo')->whereIn('id', [1, 2, 3, 4])->get();
@@ -101,9 +84,7 @@ class WhereQueriesTest extends TestCase
         $this->mockIndex(User::class)
             ->shouldReceive('searchSingleIndex')
             ->once()
-            ->with('users', Mockery::subset(['query' => 'foo', 'numericFilters' => [
-                ['0 = 1'],
-            ]]))
+            ->with('users', Mockery::subset(['query' => 'foo', 'filters' => '(0 = 1)']))
             ->andReturn(['hits' => []]);
 
         User::search('foo')->whereIn('id', [])->get();
@@ -114,10 +95,7 @@ class WhereQueriesTest extends TestCase
         $this->mockIndex(User::class)
             ->shouldReceive('searchSingleIndex')
             ->once()
-            ->with('users', Mockery::subset(['query' => 'foo', 'numericFilters' => [
-                ['id=1', 'id=2'],
-                'key=value',
-            ]]))
+            ->with('users', Mockery::subset(['query' => 'foo', 'filters' => '(id=1 OR id=2) AND key=value']))
             ->andReturn(['hits' => []]);
 
         User::search('foo')->whereIn('id', [1, 2])->where('key', 'value')->get();

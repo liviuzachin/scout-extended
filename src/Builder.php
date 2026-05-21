@@ -82,11 +82,14 @@ class Builder extends BaseBuilder
             return parent::where($field, $this->transform($operator));
         }
 
-        return parent::where($field, "$operator {$this->transform($value)}");
+        return parent::where($field, $operator, $this->transform($value));
     }
 
     /**
      * Customize the search adding a where between clause.
+     *
+     * Passes an array [min, max] as the where value (Scout v11 normally expects a scalar) so that
+     * AlgoliaEngine::filters() can render Algolia's range syntax: "field: min TO max".
      *
      * @param  string $field
      * @param  array $values
@@ -95,7 +98,7 @@ class Builder extends BaseBuilder
      */
     public function whereBetween($field, array $values): self
     {
-        return $this->where("$field:", "{$this->transform($values[0])} TO {$this->transform($values[1])}");
+        return parent::where($field, ':', [$this->transform($values[0]), $this->transform($values[1])]);
     }
 
     /**
@@ -108,17 +111,20 @@ class Builder extends BaseBuilder
      */
     public function whereIn($field, $values): self
     {
-        if (! empty($values)) {
-            $wheres = array_map(function ($value) use ($field) {
-                return "$field={$this->transform($value)}";
-            }, array_values($values));
-        } else {
-            $wheres = ['0 = 1'];
-        }
+        return parent::whereIn($field, array_map(fn ($v) => $this->transform($v), array_values((array) $values)));
+    }
 
-        $this->wheres[] = $wheres;
-
-        return $this;
+    /**
+     * Customize the search adding a where not in clause.
+     *
+     * @param  string $field
+     * @param  array $values
+     *
+     * @return $this
+     */
+    public function whereNotIn($field, $values): self
+    {
+        return parent::whereNotIn($field, array_map(fn ($v) => $this->transform($v), array_values((array) $values)));
     }
 
     /**
